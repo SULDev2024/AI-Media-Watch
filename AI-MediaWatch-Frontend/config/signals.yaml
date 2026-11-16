@@ -1,0 +1,898 @@
+# config/signals.yaml — Expert-curated indicator catalog (Phase 8)
+#
+# DISTINCT from TRIGGER_KEYWORDS in aimw.collection (§4 — priority filter, never evidence).
+# Each entry becomes an EvidencePiece with polarity/strength/indicator_type/regulation_ref.
+#
+# Fields
+# -------
+# id              Machine identifier; becomes indicator_type on EvidencePiece.
+# polarity        "incriminating" | "mitigating"
+# default_strength "strong" | "medium" | "weak"
+# match.keywords  Case-insensitive substrings checked against normalized text.
+# match.regex     Patterns checked with re.IGNORECASE | re.UNICODE.
+# requires        Entity field paths (e.g. "entities.crypto_wallets").  Each item
+#                 is an OR — any one satisfied fires the signal once per package;
+#                 source is set to "entity".  Empty list means keyword/regex only.
+# regulation_ref  Statute id from regulations_kz.yaml; null where unsure.
+#
+# Keyword matching fires at most once per (indicator_type, source, segment/frame),
+# so the same keyword appearing 5 times in one segment counts as one hit.
+# Diminishing returns across multiple segments/frames is handled in rules.py.
+
+indicators:
+
+  # ── INCRIMINATING ──────────────────────────────────────────────────────────
+
+  - id: guaranteed_return
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        - гарантир          # гарантирован*, гарантия
+        - без риска
+        - 100% прибыл
+        - ежедневн выплат
+        - пассивн доход
+        - guaranteed return
+        - guaranteed profit
+        - no risk
+        - risk free
+        - riskfree
+        - без потерь
+        - всегда в плюс
+      regex:
+        - '\d+\s*%\s*(в\s+день|в\s+месяц|в\s+неделю|daily|monthly|weekly)'
+    requires: []
+    regulation_ref: art_170_part2_kz
+
+  - id: pyramid_recruit
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        - пригласи друзей
+        - приведи друга
+        - доход с каждого
+        - привлекай клиент
+        - зарабатывай за каждого
+        - реферальн ссылк
+        - referral link
+        - recruit
+        - refer a friend
+        - bring friends
+        - каждый приглашённый
+        - earn per referral
+        - invite and earn
+        - приглашай зарабатывай
+        - привлечение партнёров
+        - бонус за каждого
+        # Phase 15.7 — additional referral-farming patterns
+        - реферальную ссылку     # exact form (Pocket Option case)
+        - партнёрскую ссылку     # partner link form
+        - per referral           # "earn up to $20 per referral"
+        - invite friends         # "invite friends" — AAA Trading
+        - зарабатывать, приглашая  # "зарабатывать, приглашая своих друзей"
+        - приглашая своих друзей   # Binance/Bybit phrasing (приглашая form)
+        - приглашает своих друзей  # Binance/Bybit phrasing (приглашает form)
+        - заработок за реферала
+        - cash back immediately upon successful registration  # AAA Trading
+        - партнёрскую программу     # partner program
+        - реферальную программу     # referral program (plain)
+        # Phase 15.7 — MLM tier language (vid-661f13369a9468ae: "лично приглашаете нового партнера")
+        - приглашаете нового партнёра
+        - приглашаете нового партнера
+        - лично приглашает нового
+      regex: []
+    requires: []
+    regulation_ref: art_217_kz
+
+  - id: payment_wallet_disclosed
+    polarity: incriminating
+    default_strength: strong
+    match:
+      keywords: []
+      regex: []
+    requires:
+      - entities.crypto_wallets
+    regulation_ref: null
+
+  - id: payment_phone_disclosed
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords: []
+      regex: []
+    requires:
+      - entities.payment_phones
+    regulation_ref: null
+
+  - id: referral_code_present
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords: []
+      regex: []
+    requires:
+      - entities.referral_codes
+      - entities.telegram_links
+      - entities.telegram_handles
+    regulation_ref: null
+
+  - id: unlicensed_advice
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        - инвестируй
+        - вложи сейчас
+        - invest now
+        - вкладывайте
+        - deposit now
+        - купи токен
+        - buy the dip
+        - invest in
+      regex: []
+    requires: []
+    regulation_ref: art_229_kz
+
+  - id: casino_promo
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        - казино
+        - ставки
+        - беспроигрышн
+        - обыграй
+        - casino
+        - sports bet
+        - bookmaker
+        - ставку на
+        - slots
+        - bonus slots
+        - welcome bonus
+        - no deposit bonus
+        - free spins
+        - poker tournament
+        - wagering requirement
+        - азартн игр
+        - букмекер
+        - тотализатор
+        - ставках на спорт
+        - ставки на футбол
+        - лайв ставки
+      regex: []
+    requires: []
+    regulation_ref: art_7_gambling_kz
+
+  - id: pump_signal
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        - торговый сигнал
+        - следи за каналом
+        - памп
+        - pump signal
+        - trading signal
+        - buy signal
+        - sell signal
+        - сигнал на покупку
+        - сигнал на продажу
+      regex: []
+    requires: []
+    regulation_ref: null
+
+  - id: mlm_pyramid
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        # English MLM / network-marketing vocabulary
+        - mlm
+        - multi-level marketing
+        - multilevel marketing
+        - network marketing
+        - downline
+        - upline
+        - compensation plan
+        - binary plan
+        - unilevel
+        - matrix plan
+        - distributor income
+        - independent distributor
+        - direct sales team
+        - passive income team
+        - build your team
+        - grow your downline
+        - residual income team
+        - join my team
+        - recruiter bonus
+        - sponsor bonus
+        - level commission
+        # Russian MLM vocabulary
+        - сетевой маркетинг
+        - многоуровневый маркетинг
+        - дистрибьютор
+        - независимый дистрибьютор
+        - компенсационный план
+        - бинарный план
+        - матричный план
+        - уровень структуры
+        - структура команды
+        - вышестоящий партнёр
+        - нижестоящий партнёр
+        - рефер бонус
+        - бонус наставника
+        - пассивный заработок с команды
+        - заработай на структуре
+        # Phase 15.7 — Cyrillic MLM terms and network-business variants
+        - млм                    # Cyrillic МЛМ (≠ Latin "mlm")
+        - сетевой бизнес         # network business (vid-661f13369a9468ae)
+        - сетевом бизнесе        # inflected form
+        - сетевика               # MLM participant noun
+        - сетевик                # MLM participant (informal)
+        - реферал плюс           # Referral Plus MLM platform
+        - млм-проект             # Cyrillic MLM project
+        - создать команду партнёров  # "create a team of partners"
+        - автоматизации mlm      # MLM automation
+        - рекрутировать партнёров  # recruit partners
+        # Phase 15.9 — Hindi (Devanagari) MLM / network-marketing vocabulary
+        - नेटवर्क मार्केटिंग        # network marketing
+        - नेटवर्क मार्केटिं         # partial stem (inflections)
+        - एमएलएम                  # MLM
+        - डाउनलाइन                 # downline
+        - अपलाइन                  # upline
+        - बिजनेस प्लान             # business plan
+        - बिज़नेस प्लान            # business plan (nukta variant)
+        - टीम बनाओ                # build a team
+        - टीम बनाकर               # by building a team
+        - सेलिंग नेटवर्क           # selling network
+        - डायरेक्ट सेलिंग          # direct selling
+        - बिजनेस अपॉर्चुनिटी       # business opportunity
+        - लेवल इनकम               # level income
+      regex:
+        # "X levels deep" / "X уровней" patterns common in MLM
+        - '\d+\s*(уровн|level[s]?\s+deep|tier[s]?\s+down)'
+    requires: []
+    regulation_ref: art_217_kz
+
+  - id: crypto_giveaway
+    polarity: incriminating
+    default_strength: strong
+    match:
+      keywords:
+        # English giveaway scam vocabulary
+        - free bitcoin
+        - free crypto
+        - bitcoin giveaway
+        - crypto giveaway
+        - btc giveaway
+        - eth giveaway
+        - send bitcoin
+        - send btc
+        - double your bitcoin
+        - double your crypto
+        - double your money
+        - send and receive double
+        - send 0.1 get 0.2
+        - 1000 btc giveaway
+        - elon musk giveaway
+        - elon musk bitcoin
+        - tesla giveaway crypto
+        - limited time offer send
+        - participate send
+        - giveaway send btc
+        - flash giveaway
+        # Russian giveaway vocabulary
+        - бесплатный биткоин
+        - бесплатная криптовалюта
+        - криптовалюта в подарок
+        - биткоин розыгрыш
+        - крипто розыгрыш
+        - отправь и получи вдвое
+        - удвой биткоин
+        - розыгрыш биткоин
+        - акция биткоин
+        - биткоин бонус бесплатно
+        # Kazakh giveaway vocabulary
+        - тегін биткоин
+        - тегін крипто
+        - биткоин сыйлық
+      regex:
+        # send X BTC get 2X BTC pattern
+        - 'send\s+\d+\.?\d*\s*(btc|eth|usdt|bnb)'
+        - '(get|receive)\s+\d+\.?\d*\s*(btc|eth|usdt|bnb)\s+back'
+        - 'отправ[ьи]\s+\d+\.?\d*\s*(btc|eth|usdt)'
+    requires: []
+    regulation_ref: art_170_part2_kz
+
+  - id: passive_income_ru
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        # Enhanced Russian passive-income / guaranteed earnings signals
+        - пассивный заработок
+        - пассивн доход без
+        - без вложений зарабатывай
+        - никаких вложений
+        - ежедневный заработок
+        - ежедневн доход
+        - лёгкий заработок
+        - лёгкий доход
+        - автоматический заработок
+        - автоматическ доход
+        - работа из дома заработок
+        - заработок без опыта
+        - деньги пока спишь
+        - зарабатывай пока спишь
+        - доход каждый день
+        - стабильный доход каждый
+        - стабильные выплаты каждый
+        - беспроигрышная стратегия
+        - беспроигрышный метод
+        - заработок гарантирован
+        - прибыль каждый день
+        - ежечасные выплаты
+        # Targeted "passive income" phrases broader than existing guaranteed_return
+        - без риска зарабатывай
+        - зарабатывай сидя дома
+        - заработок на автопилоте
+        - доход на автопилоте
+        - стопроцентная прибыль
+        - 100 процентов прибыли
+      regex:
+        # NN% в сутки / NN% в час / NN% profit daily
+        - '\d+\s*%\s*(в\s+сутки|в\s+час|hourly|profit\s+daily|return\s+daily)'
+        # "от X до Y рублей/долларов в день" earning claims
+        - 'от\s+\d+\s+до\s+\d+\s+(рублей|долларов|тенге|usd|usdt)\s+в\s+день'
+    requires: []
+    regulation_ref: art_170_part2_kz
+
+  - id: kz_fraud_signals
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        # Kazakh-language fraud indicators
+        - кепілдікті табыс
+        - кепілдікті пайда
+        - тәуекелсіз
+        - тәуекелсіз табыс
+        - тегін табыс
+        - күнделікті табыс
+        - автоматты табыс
+        - желілік маркетинг
+        - торлы маркетинг
+        - дистрибьютор болу
+        - команда жина
+        - достарыңды шақыр
+        - шақыр және тапса
+        - инвестиция салып тап
+        - кепілдік берілген кіріс
+        - тәуекелсіз инвестиция
+        - биткоин сыйлық ал
+        - тегін криптовалюта
+        - пирамида схема
+        # Kazakh financial crime terminology
+        - қаржылық пирамида
+        - алаяқтық схема
+        - жасырын табыс
+      regex: []
+    requires: []
+    regulation_ref: art_217_kz
+
+  - id: referral_program_income
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        # Russian: partner/affiliate program income promotion
+        - реферальную программу      # "реферальную программу биржа Binance"
+        - реферальная программа      # "реферальная программа криптовалютной биржи"
+        - реферальную программу биржи
+        - партнёрской программе      # "зарабатывать на партнёрской программе Тиньков"
+        - партнёрской программы      # genitive form
+        - стать партнёром            # "как стать партнёром Pocket Option"
+        - аффилированный партнёр     # "аффилированным партнёром"
+        - заработок на партнёрке     # short form
+        - партнёрка заработок
+        - зарабатывать на партнёрской
+        - зарабатывать на реферале
+        - доход от рефералов
+        - реферальный заработок
+        - заработай на партнёрке
+        - заработок с партнёрской
+        - реферальная комиссия
+        - зарабатывать на рефералке  # "заработку на рефералке bybit"
+        - заработку на рефералке
+        # English: referral income claims
+        - referral income
+        - earn from referrals
+        - earn with referrals
+        - make money with referrals
+        - get paid per referral
+        - earn money referring
+        - referral earnings
+        - affiliate commission
+        - affiliate income
+        # Phase 15.7 — colloquial Russian forms (vid-1a23018c8b51c60e: "партнёрка теньков")
+        - партнёрку            # accusative: "взять партнёрку"
+        - партнёрке            # dative/prepositional: "на партнёрке"
+        - партнёрки            # genitive plural: "много партнёрки"
+        - партнёрок            # genitive plural alt: "партнёрок банков"
+        - партнёркой           # instrumental: "доходом с партнёркой"
+        - партнёрка            # nominative: "партнёрка теньков — это..."
+      regex:
+        - 'earn\s+\$?\d+.*per\s+referral|\$\d+.*per\s+referral'
+        - 'зарабатыва[а-я]+\s+на\s+партнёрск'
+      requires: []
+      regulation_ref: art_217_kz
+
+  - id: trading_bot_promo
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        # English: automated trading bot / EA promotion
+        - trading bot
+        - ea robot
+        - pip killer
+        - pipkiller
+        - signal bot
+        - automated trading bot
+        - forex robot
+        - ai trading bot
+        - crypto trading bot
+        - trade while you sleep
+        - algorithmic trading system
+        - expert advisor robot
+        - binary bot
+        - use a trading bot
+        # Phase 15.9 — crypto-arbitrage / AI-bot scam typology (2024-2026)
+        - flash loan
+        - flash loans
+        - crypto arbitrage
+        - arbitrage bot
+        - high yield arbitrage
+        - yield arbitrage
+        - ai trading robot
+        - ai trading
+        - automated arbitrage
+        - pocket option
+        - quotex
+        - trading robot
+        # Phase 19B FN evidence — Telegram-bot / VIP-signals funnel language
+        # that paired with one of the existing keywords on the FN videos but
+        # never fired because the matcher had nothing else to lock onto.
+        - telegram bot
+        - join my telegram
+        - join the telegram
+        - my telegram channel
+        - private signals
+        - vip signals
+        - vip group
+        - signal channel
+        - free signals group
+        - join my vip
+        # ChatGPT-bot scam variants (Qu5a_fwKWIk, JjC4hWBdWog FN evidence)
+        - chatgpt bot
+        - chatgpt trading bot
+        - chatgpt arbitrage
+        - ai arbitrage bot
+        # Russian
+        - торговый бот
+        - торговый робот
+        - сигнальный бот
+        - бот торгует
+        - торгует за вас
+        - автоматическая торговля ботом
+        - форекс робот
+        - арбитраж криптовалют
+        - крипто арбитраж
+      regex:
+        - 'trading\s+bot|forex\s+robot|pip\s*killer|signal\s+bot|ea\s+robot'
+        - 'торговый\s+(бот|робот)|сигнальный\s+бот'
+        - 'flash\s+loan|crypto\s+arbitrage|arbitrage\s+bot'
+    requires: []
+    regulation_ref: null
+
+  - id: crypto_staking_income
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        # English: staking as passive income source
+        - staking passive income
+        - earn from staking
+        - passive income staking
+        - staking income
+        - staking could help
+        - bybit earn
+        - passive staking
+        - earn daily from staking
+        - staking rewards daily
+        - earn staking
+        - crypto yield
+        - defi passive income
+        - locked staking
+        # Russian
+        - заработок на стейкинге
+        - пассивный доход на бирже
+        - пассивный доход без торговли
+        - стейкинг доход
+        - стейкинг пассивный
+        - пассиве на бирже
+        - на полном пассиве
+      regex:
+        - 'staking.*\$\d+[k]?.*month|\$\d+[k]?.*month.*staking'
+    requires: []
+    regulation_ref: null
+
+  - id: sports_betting_income
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        # English: sports betting income / profit claims
+        - rich from sports betting
+        - profit from sports betting
+        - consistent profit betting
+        - beating the sportsbooks
+        - beating the bookmakers
+        - make money from betting
+        - profitable betting
+        - sports betting income
+        - sports betting profit
+        - sports betting system
+        - i got rich from betting
+        - winning at sports betting
+        - earn from betting
+        - beating the book
+        - profitable picks
+        - consistent sports betting
+        # Phase 15.7 — "If you're serious about profitable sports betting" (vid-f0c5614ff92dcd52 OCR)
+        - profitable sports betting
+        - sports betting profits
+        - serious about sports betting
+      regex:
+        - 'make\s+\$\d+\s*(a\s+)?day\s+betting|make\s+money.*betting\s+on\s+sports'
+        - 'get\s+rich\s+from\s+sports\s+betting|rich\s+from\s+sports\s+betting'
+        - '\$\d+\s+a\s+day\s+betting|\$\d+\s+per\s+day\s+betting'
+    requires: []
+    regulation_ref: art_7_gambling_kz
+
+  # ── PHASE 15.9 SEMANTIC SIGNAL FAMILIES ──────────────────────────────────
+  # Higher-level, multilingual (EN / RU / HI) families. Keyword sets are kept
+  # DISJOINT from each other and from the legacy indicators above so a single
+  # phrase fires exactly one indicator (no double-counting). See
+  # signal_family_map.md for how legacy indicators roll up into these families.
+
+  - id: investment_promise
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        # English — "turn small money into big money" investment promises
+        - double your investment
+        - grow your money fast
+        - turn your money into
+        - multiply your money
+        - invest and earn daily
+        - small investment big return
+        - high return investment
+        - high yield investment
+        - make your money work
+        # English — "investment plan" framing (was Hindi-only before)
+        - investment plan
+        - investment platform
+        - invest with us
+        - minimum investment
+        - ultimate plan
+        # Hindi (Devanagari / Hinglish)
+        - इन्वेस्ट करके कमाओ        # invest and earn
+        - इन्वेस्टमेंट प्लान         # investment plan
+        - पैसा डबल                  # money double
+        - विदाउट इन्वेस्टमेंट         # without investment (Hinglish)
+        - बिना इन्वेस्टमेंट          # without investment
+      regex:
+        # turn $X into $Y  /  $X to $Y in N days
+        - 'turn\s+\$?\d[\d,\.]*\s+(in)?to\s+\$?\d[\d,\.]*'
+        - '\$?\d[\d,\.]*\s+into\s+\$?\d[\d,\.]*'
+        # Phase 19B FN evidence — "flip $100 to $5000" / "$10 to $11,421"
+        # Crypto Lord Gh & Micha Trader FN snippets used "to" rather than "into";
+        # the existing patterns required "turn" or "into" and missed both.
+        - 'flip\s+\$?\d[\d,\.]*\s+(in)?to\s+\$?\d[\d,\.]*'
+        - '\$\d[\d,\.]*\s+to\s+\$\d[\d,\.]*'
+    requires: []
+    regulation_ref: art_170_part2_kz
+
+  # The classic deposit/return table — "INVEST $200 GET $1,200",
+  # "deposit 100 receive 1000", "send $50 get $500". A promised multiple
+  # return on a fixed stake has no legitimate financial meaning, so this is
+  # a STRONG standalone signal. (Telegram/Instagram investment-scam staple
+  # that the "turn X into Y" patterns above did not catch.)
+  - id: investment_multiplier
+    polarity: incriminating
+    default_strength: strong
+    match:
+      keywords: []
+      regex:
+        - '(invest|deposit|send|pay|stake)\s*\$?\d[\d,\.]*\s*(get|gets?|receive|make|earn|return|returns?|profit|win|you\s+get|gives?\s+you)\s*\$?\d[\d,\.]*'
+    requires: []
+    regulation_ref: art_170_part2_kz
+
+  - id: guaranteed_profit
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        # English — guaranteed profit / proof-of-payout scam framing
+        - profit guaranteed
+        - guaranteed daily profit
+        - guaranteed daily income
+        - withdrawal proof
+        - payment proof
+        - 100% profit
+        - 100% win
+        - never lose
+        - win every trade
+        - win every day          # "we win every day" — proof-of-consistency scam framing
+        - winning strategy guaranteed
+        - profits guaranteed     # plural form ("100% profits guaranteed")
+        - profit guarantee
+        - 100% legit             # trust-stamp framing common to investment scams
+        - 100% real
+        - 100% guaranteed
+        # Phase 19B FN evidence — TAR-bot / LUCY-bot proof-of-payout framing
+        # appearing on Telegram-bot scam pitches that under-fired in the baseline.
+        - live payment proof
+        - payment proof from the bot
+        - bot paying me
+        - bot pays you
+        - bot pays daily
+        # Hindi
+        - मुनाफे की गारंटी          # profit guarantee
+        - गारंटीड इनकम             # guaranteed income
+        - पेमेंट प्रूफ              # payment proof
+        - फिक्स इनकम               # fixed income
+      regex:
+        # "87% win rate" / "100% profit" / "95% accuracy"
+        - '\d{2,3}\s*%\s*(win\s*rate|winrate|profit|accuracy|success\s*rate)'
+        - '(win\s*rate|accuracy)\s*[:\-]?\s*\d{2,3}\s*%'
+        # Time-bound guaranteed payout — "get your profits within 72 hours",
+        # "withdraw within 24hrs". A fixed-deadline payout promise is a strong
+        # scam tell regardless of platform.
+        - 'profits?\s+within\s+\d+\s*(hours?|hrs?|days?)'
+        - '(withdraw|payout|cash\s*out)\s+within\s+\d+\s*(hours?|hrs?|days?)'
+    requires: []
+    regulation_ref: art_170_part2_kz
+
+  - id: recruitment_funnel
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        # English — invite/referral funnel income (distinct from pyramid_recruit
+        # legacy phrasings; focuses on "per invite/reward" app-funnel language)
+        - per invite
+        - reward per invite
+        - invite reward
+        - refer and earn
+        - refer & earn
+        - referral reward
+        - referral bonus app
+        - invite and get paid
+        - get paid to invite
+        - earn by inviting
+        # Hindi
+        - रेफरल                    # referral
+        - रेफर करें                 # refer (please)
+        - रेफर करके                 # by referring
+        - इनवाइट                   # invite
+        - ज्वाइन करें               # join (please)
+        - ज्वाइन करके               # by joining
+        - रेफरल कोड                 # referral code
+        - प्रति इनवाइट              # per invite
+      regex:
+        - '\$?\d[\d,\.]*\s*(per|/)\s*(invite|referral|signup|sign-up)'
+        - 'refer(ral)?\s+(and|&|to)\s+earn'
+    requires: []
+    regulation_ref: art_217_kz
+
+  - id: gambling_income
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        # English — slot-streamer / bonus-buy promotion (distinct from casino_promo)
+        - bonus buy
+        - bonus buys
+        - bonus hunt
+        - big win
+        - mega win
+        - max win
+        - huge win
+        - insane win
+        - free spin bonus
+        - gates of olympus
+        - sweet bonanza
+        - big bass
+        - sugar rush
+        - book of dead
+        - slot session
+        - bonus round
+        # Russian — sports-betting tips funnel
+        - футбольные прогнозы
+        - прогноз на матч
+        - прогнозы на спорт
+        - экспресс дня
+        - ставка дня
+        - прогноз на футбол
+        - точный счёт прогноз
+        - заработок на ставках
+        - стратегия ставок
+        - вилки на ставках
+        # Hindi
+        - सट्टा                     # betting
+        - बेटिंग                    # betting
+      regex:
+        - '(max|mega|big|huge|insane)\s+win\s+\$?\d'
+        - 'x\d{2,5}\s+win'
+    requires: []
+    regulation_ref: art_7_gambling_kz
+
+  - id: passive_income
+    polarity: incriminating
+    default_strength: medium
+    match:
+      keywords:
+        # English — passive-income lure (RU handled by passive_income_ru)
+        - passive income
+        - earn while you sleep
+        - money on autopilot
+        - income on autopilot
+        - set it and forget it income
+        - make money in your sleep
+        - earn money doing nothing
+        - earn money online without
+        - earn from home no skills
+        # Hindi
+        - पैसिव इनकम               # passive income
+        - घर बैठे कमाई             # earn sitting at home
+        - घर बैठे पैसे             # money sitting at home
+        - रोज कमाओ                # earn daily
+        - बिना मेहनत कमाई          # earn without effort
+      regex:
+        - 'earn\s+\$?\d[\d,\.]*\s*(a|per|/)\s*(day|week|month)\s+(passively|on\s+autopilot)'
+        # Phase 19B FN evidence — raw "$X per day / $X daily" income claims that
+        # the baseline only matched when the percent-form fired. ChatGPT-bot,
+        # CHATGPT Crypto Arbitrage BOT, and Anonymous Wealth pitches were missed.
+        - '\$\d[\d,\.]*\s*(/|per|a)\s*(day|week|month)'
+        - '\$\d[\d,\.]*\s+(daily|weekly|monthly)'
+        - 'earn\s+(up\s+to\s+)?\$\d[\d,\.]*\s+(a|per|/)\s*(day|week|month)'
+    requires: []
+    regulation_ref: art_170_part2_kz
+
+  # ── MITIGATING ─────────────────────────────────────────────────────────────
+  # §6.4: mitigating signals are evidence-gated and cannot override Rule B.
+
+  - id: risk_disclosure
+    polarity: mitigating
+    default_strength: strong
+    match:
+      keywords:
+        - не является финансовой рекомендацией
+        - not financial advice
+        - нфа
+        - "nfa"
+        - риски потери
+        - инвестиции несут риски
+        - capital at risk
+        - can lose money
+        - прошлые результаты не гарантируют
+        - не гарантирует прибыль
+        - все инвестиции рискованны
+      regex: []
+    requires: []
+    regulation_ref: null
+
+  - id: journalism_framing
+    polarity: mitigating
+    default_strength: strong
+    match:
+      keywords:
+        - я расследовал
+        - мы расследовали
+        - жертвы потеряли
+        - схема обмана
+        - разоблачение мошенни
+        - предупреждение об
+        - fraud warning
+        - scam alert
+        - victim lost
+        - pyramid scheme warning
+        - expose fraud
+        - investigative report
+        - финансовая пирамида (разоблачение)
+      regex: []
+    requires: []
+    regulation_ref: null
+
+  - id: licensing
+    polarity: mitigating
+    default_strength: medium
+    match:
+      keywords:
+        - лицензия
+        - лицензиро
+        - cfp
+        - афн
+        - аfм
+        - licensed advisor
+        - registered broker
+        - аррфр
+      regex:
+        - '(АФН|AFN|CFP|АРРФР|лицензия|лицензир)\s*[№#]?\s*[\w\-]{4,}'
+    requires: []
+    regulation_ref: null
+
+  - id: satire_markers
+    polarity: mitigating
+    default_strength: weak
+    match:
+      keywords:
+        - not serious
+        - это шутка
+        - satire
+        - just kidding
+      regex:
+        - '😉'
+        - '(?<!\w)/[sS](?!\w)'   # Reddit sarcasm /s as standalone token
+    requires: []
+    regulation_ref: null
+
+  - id: educational_framing
+    polarity: mitigating
+    default_strength: medium
+    match:
+      keywords:
+        # Russian educational phrases
+        - обучение трейдингу
+        - образовательный контент
+        - учебный пример
+        - как работает финанс
+        - объяснение механизма
+        - разбор схемы
+        # English educational / explainer patterns (strongly educational, not affiliate-style)
+        - education only
+        - educational purposes
+        - for educational
+        - not financial advice
+        - what is a
+        - what is an
+        - how does it work
+        - types of
+        - pros and cons
+        - is it legit
+        - is it a scam
+        - also known as
+        - is known as
+        - are known as
+        # Awareness / warning patterns
+        - protect yourself
+        - how to spot
+        - how to avoid
+        - warning signs
+        - red flags
+        - don't fall for
+        - beware of
+        - scam alert
+        - fraud alert
+        - consumer protection
+        - do your own research
+        - stay safe
+      regex: []
+    requires: []
+    regulation_ref: null

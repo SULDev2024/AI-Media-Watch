@@ -1,0 +1,4 @@
+# Local Agent audio runtime. PyAV 19 removed metadata_errors from av.open,
+# but faster-whisper 1.2.1 still supplies it. Keep the model/decoder code intact.
+faster-whisper==1.2.1
+av==18.1.0

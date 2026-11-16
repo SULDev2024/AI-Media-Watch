@@ -1,0 +1,16 @@
+# AI Media Watch — curated seed channels (Phase 4).
+#
+# Curation policy (see §2/§4 of AI_MediaWatch_v4.md): the system watches a
+# *curated* set of PUBLIC Telegram channels plus analyst-submitted URLs. It does
+# NOT crawl platforms. Only add channels that are:
+#   1. PUBLIC (joinable; no private/bulk scraping — ToS + credibility),
+#   2. FINANCIAL-TOPIC (investing, trading, "passive income", crypto, betting),
+#   3. KZ-RELEVANT (Kazakhstan audience; RU / KK / code-switched content).
+#
+# Copy to `config/channels.yaml` and edit. Entries may be a bare username string
+# or a mapping: {name: <username>, entity: <username-or-id>}.
+
+- example_kz_invest_signals       # placeholder — replace with a real public channel
+- name: example_kz_passive_income # placeholder
+  entity: example_kz_passive_income
+- example_kz_betting_tips         # placeholder

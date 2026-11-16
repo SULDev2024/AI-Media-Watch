@@ -1,0 +1,17 @@
+# Separate Python 3.12 Local Agent; observed direct runtime dependencies.
+fastapi==0.137.1
+uvicorn==0.54.0
+python-multipart==0.0.33
+httpx==0.28.1
+ollama==0.6.2
+numpy==2.4.4
+Pillow==12.3.0
+opencv-python-headless==4.13.0.92
+easyocr==1.7.2
+faster-whisper==1.2.1
+av==18.1.0
+# Install a matching torch/torchvision pair. See README for CPU setup.
+torch>=2.1
+torchvision>=0.16
+# Optional legacy interface; not the supported React demo path.
+streamlit==1.60.0

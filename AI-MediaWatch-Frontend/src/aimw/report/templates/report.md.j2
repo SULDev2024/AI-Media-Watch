@@ -1,0 +1,119 @@
+{# Markdown evidence report — Phase 10. -#}
+# Evidence Report
+
+**Report ID**: `{{ pkg.report_id }}`
+**Video ID**: `{{ pkg.video_id }}`
+**Platform**: {{ pkg.platform }}
+**URL**: <{{ pkg.url }}>
+**Collected**: {{ pkg.collected_at.isoformat() }}
+**Processed**: {{ pkg.processed_at.isoformat() }}
+
+## Verdict
+
+| Field | Value |
+| --- | --- |
+| Risk level | **{{ result.level }}** |
+| Confidence | {% if result.confidence %}{{ "%.2f"|format(result.confidence.confidence) }}{% else %}—{% endif %} |
+| Action | `{{ result.action }}` |
+| Confidence softened | {{ result.confidence_softened }} |
+{% if result.status_note %}| Status note | `{{ result.status_note }}` |
+{% endif %}
+
+## Evidence
+
+{% if pkg.evidence -%}
+| # | Source | Timestamp | Indicator | Polarity | Strength | Raw value | Regulation |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+{% for p in pkg.evidence -%}
+| {{ loop.index }} | {{ p.source }} | {% if p.timestamp is not none %}{{ "%.1f"|format(p.timestamp) }}s{% else %}—{% endif %} | `{{ p.indicator_type }}` | {{ p.polarity }} | {{ p.strength }} | `{{ p.raw_value|truncate(40, true, "…") }}` | {{ p.regulation_ref or "—" }} |
+{% endfor %}
+{%- else -%}
+_No evidence pieces._
+{%- endif %}
+
+## Entities
+
+| Type | Values |
+| --- | --- |
+| Telegram handles | {{ pkg.entities.telegram_handles | join(", ") or "—" }} |
+| Telegram links | {{ pkg.entities.telegram_links | join(", ") or "—" }} |
+| Crypto wallets | {{ pkg.entities.crypto_wallets | join(", ") or "—" }} |
+| Phones | {{ pkg.entities.phone_numbers | join(", ") or "—" }} |
+| Referral codes | {{ pkg.entities.referral_codes | join(", ") or "—" }} |
+| Websites | {{ pkg.entities.websites | join(", ") or "—" }} |
+| Profit claims | {{ pkg.entities.profit_claims | join(", ") or "—" }} |
+
+## Score Breakdown
+
+* `raw_incriminating`        = {{ "%.4f"|format(result.adjusted.raw_incriminating) }}
+* `raw_mitigating`           = {{ "%.4f"|format(result.adjusted.raw_mitigating) }}
+* `incrim_after_diminishing` = {{ "%.4f"|format(result.adjusted.incrim_after_diminishing) }}
+* `mitig_after_diminishing`  = {{ "%.4f"|format(result.adjusted.mitig_after_diminishing) }}
+* `applied_entity_gate`      = {{ result.adjusted.applied_entity_gate }}
+* `mitigation_floor_applied` = {{ result.adjusted.mitigation_floor_applied }}
+* `mitig_after_floor`        = {{ "%.4f"|format(result.adjusted.mitig_after_floor) }}
+* `raw_score`                = {{ "%.4f"|format(result.adjusted.raw_score) }}
+* `clamped_score`            = {{ "%.4f"|format(result.adjusted.clamped_score) }}
+* `single_source_ceiling_applied` = {{ result.adjusted.single_source_ceiling_applied }}
+* `final_score`              = **{{ "%.4f"|format(result.adjusted.final_score) }}**
+* `level`                    = {{ result.adjusted.level }}
+
+## Prosecutor Brief
+
+{% if result.prosecutor and result.prosecutor.arguments -%}
+{% for arg in result.prosecutor.arguments -%}
+- **{{ arg.strength | upper }}** — {{ arg.statement }}
+  _cites: {{ arg.evidence_piece_ids | join(", ") }}_
+{% endfor -%}
+{%- else -%}
+_No prosecutor arguments produced._
+{%- endif %}
+
+## Defense Brief
+
+{% if result.defense and result.defense.arguments -%}
+{% for arg in result.defense.arguments -%}
+- **{{ arg.strength | upper }}** — {{ arg.statement }}
+  _cites: {{ arg.evidence_piece_ids | join(", ") }}_
+{% endfor -%}
+{%- else -%}
+_No defense arguments produced._
+{%- endif %}
+
+## Valid Discounts
+
+{% if result.valid_discounts -%}
+{% for d in result.valid_discounts -%}
+- `{{ d.kind }}` on `{{ d.piece_indicator_type or "—" }}` — {{ d.reason }}
+{% endfor -%}
+{%- else -%}
+_None._
+{%- endif %}
+
+## Network Connections
+
+{% if pkg.network_connections -%}
+{% for conn in pkg.network_connections -%}
+- `{{ conn.kind }}` / `{{ conn.shared_entity_kind }}` = `{{ conn.shared_entity_value }}`
+  campaign_strength=**{{ conn.campaign_strength }}**, co-occurring videos: {{ conn.co_occurring_report_ids | join(", ") }}
+  _detected at {{ conn.detected_at.isoformat() }}_
+{% endfor -%}
+{%- else -%}
+_No network connections recorded._
+{%- endif %}
+
+## Confidence Breakdown
+
+{% if result.confidence -%}
+* `agreement`  = {{ "%.4f"|format(result.confidence.agreement) }}
+* `redundancy` = {{ "%.4f"|format(result.confidence.redundancy) }}
+* `certainty`  = {{ "%.4f"|format(result.confidence.certainty) }}
+* `gap`        = {{ "%.4f"|format(result.confidence.gap) }}
+* `confidence` = **{{ "%.2f"|format(result.confidence.confidence) }}**
+{%- else -%}
+_Briefs were not produced (token budget or skipped run); confidence not computed._
+{%- endif %}
+
+---
+
+_schema_version: {{ schema_version }}_

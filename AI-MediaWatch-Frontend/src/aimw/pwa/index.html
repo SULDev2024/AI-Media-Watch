@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#2563eb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ScamCheck — AI MediaWatch</title>
+<link rel="manifest" href="/check/manifest.json">
+<link rel="icon" href="/check/icon-192.svg" type="image/svg+xml">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column}
+.header{background:#1e293b;padding:16px 20px;text-align:center;border-bottom:1px solid #334155}
+.header h1{font-size:20px;font-weight:700;color:#fff}
+.header p{font-size:13px;color:#94a3b8;margin-top:4px}
+.main{flex:1;padding:20px;max-width:480px;margin:0 auto;width:100%}
+.input-group{margin-bottom:16px}
+.input-group label{display:block;font-size:13px;color:#94a3b8;margin-bottom:6px;font-weight:500}
+.input-group input,.input-group textarea{width:100%;padding:12px 14px;border:1px solid #334155;border-radius:10px;background:#1e293b;color:#e2e8f0;font-size:16px;outline:none;transition:border-color .2s}
+.input-group input:focus,.input-group textarea:focus{border-color:#2563eb}
+.input-group textarea{resize:vertical;min-height:100px;font-size:14px}
+.or{text-align:center;color:#475569;font-size:13px;margin:12px 0;position:relative}
+.or::before,.or::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:#334155}
+.or::before{left:0}
+.or::after{right:0}
+.btn{width:100%;padding:14px;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:#2563eb;color:#fff}
+.btn-primary:hover{background:#1d4ed8}
+.btn-primary:disabled{background:#1e3a5f;color:#64748b;cursor:not-allowed}
+.result{margin-top:24px;border-radius:12px;padding:20px;animation:fadeIn .3s ease}
+.result-pending{background:#1e293b;border:1px solid #334155}
+.result-done{border:1px solid #334155}
+.result h3{font-size:18px;margin-bottom:8px}
+.result p{font-size:14px;line-height:1.5;color:#cbd5e1}
+.result .action{margin-top:12px;padding:10px 14px;background:rgba(255,255,255,.05);border-radius:8px;font-size:13px}
+.risk-CRITICAL,.risk-HIGH{background:rgba(239,68,68,.1);border-color:#dc2626}
+.risk-CRITICAL h3,.risk-HIGH h3{color:#f87171}
+.risk-MEDIUM{background:rgba(234,179,8,.1);border-color:#ca8a04}
+.risk-MEDIUM h3{color:#facc15}
+.risk-LOW,.risk-NONE{background:rgba(34,197,94,.1);border-color:#16a34a}
+.risk-LOW h3,.risk-NONE h3{color:#4ade80}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid #475569;border-top-color:#2563eb;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px}
+.platforms{display:flex;gap:8px;justify-content:center;margin:20px 0;flex-wrap:wrap}
+.platforms span{font-size:12px;padding:4px 10px;border-radius:99px;background:#1e293b;border:1px solid #334155;color:#94a3b8}
+.footer{text-align:center;padding:16px;font-size:11px;color:#475569}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>ScamCheck</h1>
+  <p>AI-powered fraud detection</p>
+</div>
+<div class="main">
+  <div class="platforms">
+    <span>YouTube</span><span>Instagram</span><span>TikTok</span><span>Telegram</span>
+  </div>
+
+  <form id="checkForm" onsubmit="return false">
+    <div class="input-group">
+      <label for="urlInput">Paste a link</label>
+      <input id="urlInput" type="url" placeholder="https://www.instagram.com/p/..." autocomplete="off">
+    </div>
+    <div class="or">or</div>
+    <div class="input-group">
+      <label for="textInput">Paste suspicious text</label>
+      <textarea id="textInput" placeholder="Paste the message text here..."></textarea>
+    </div>
+    <button class="btn btn-primary" id="submitBtn" onclick="submitCheck()">Check for Scam</button>
+  </form>
+
+  <div id="resultArea"></div>
+</div>
+<div class="footer">
+  AI MediaWatch &mdash; Evidence-first financial crime intelligence
+</div>
+
+<script>
+const API = '/api/v1/check';
+
+// Handle share target — extract URL from query params
+(function handleShare() {
+  const params = new URLSearchParams(location.search);
+  const sharedUrl = params.get('url') || '';
+  const sharedText = params.get('text') || '';
+  const sharedTitle = params.get('title') || '';
+
+  // Try to extract a URL from the shared text (Android often puts URL in text field)
+  const urlMatch = (sharedText + ' ' + sharedUrl).match(/https?:\/\/[^\s]+/);
+  if (urlMatch) {
+    document.getElementById('urlInput').value = urlMatch[0];
+    // Auto-submit if shared
+    if (params.has('url') || params.has('text')) {
+      setTimeout(submitCheck, 300);
+    }
+  } else if (sharedText && sharedText.length > 10) {
+    document.getElementById('textInput').value = sharedText;
+    if (params.has('text')) setTimeout(submitCheck, 300);
+  }
+
+  // Clean URL
+  if (params.toString()) {
+    history.replaceState(null, '', '/check/');
+  }
+})();
+
+async function submitCheck() {
+  const urlVal = document.getElementById('urlInput').value.trim();
+  const textVal = document.getElementById('textInput').value.trim();
+  const btn = document.getElementById('submitBtn');
+  const area = document.getElementById('resultArea');
+
+  if (!urlVal && !textVal) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Checking...';
+  area.innerHTML = '<div class="result result-pending"><span class="spinner"></span> Analyzing content...</div>';
+
+  const body = urlVal ? { url: urlVal } : { text: textVal };
+
+  try {
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Server error' }));
+      area.innerHTML = '<div class="result result-pending" style="border-color:#dc2626">Error: ' + escHtml(err.detail || 'Something went wrong') + '</div>';
+      btn.disabled = false;
+      btn.textContent = 'Check for Scam';
+      return;
+    }
+
+    const data = await res.json();
+    pollResult(data.video_id);
+  } catch (e) {
+    area.innerHTML = '<div class="result result-pending" style="border-color:#dc2626">Network error. Check your connection.</div>';
+    btn.disabled = false;
+    btn.textContent = 'Check for Scam';
+  }
+}
+
+async function pollResult(videoId) {
+  const area = document.getElementById('resultArea');
+  const btn = document.getElementById('submitBtn');
+  const maxAttempts = 60;
+
+  for (let i = 0; i < maxAttempts; i++) {
+    await sleep(2000);
+    try {
+      const res = await fetch(API + '/' + encodeURIComponent(videoId));
+      if (!res.ok) continue;
+      const data = await res.json();
+
+      if (data.status === 'done' && data.risk_level) {
+        renderResult(data);
+        btn.disabled = false;
+        btn.textContent = 'Check Another';
+        return;
+      }
+
+      const statusText = data.status === 'processing' ? 'Processing content...' : 'In queue...';
+      area.innerHTML = '<div class="result result-pending"><span class="spinner"></span> ' + statusText + '</div>';
+    } catch (e) { /* retry */ }
+  }
+
+  area.innerHTML = '<div class="result result-pending">Analysis is taking longer than expected. Try again later.</div>';
+  btn.disabled = false;
+  btn.textContent = 'Check for Scam';
+}
+
+function renderResult(data) {
+  const emoji = { CRITICAL: '\u{1F6A8}', HIGH: '⚠️', MEDIUM: '\u{1F7E1}', LOW: '\u{1F7E2}', NONE: '✅' };
+  const level = data.risk_level || 'UNKNOWN';
+  const icon = emoji[level] || '❓';
+  const score = data.risk_score != null ? ' (' + Math.round(data.risk_score * 100) + '%)' : '';
+
+  let html = '<div class="result result-done risk-' + escHtml(level) + '">';
+  html += '<h3>' + icon + ' Risk: ' + escHtml(level) + score + '</h3>';
+  if (data.summary) html += '<p>' + escHtml(data.summary) + '</p>';
+  if (data.recommended_action) html += '<div class="action"><strong>Recommended:</strong> ' + escHtml(data.recommended_action) + '</div>';
+  html += '</div>';
+
+  document.getElementById('resultArea').innerHTML = html;
+}
+
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/check/sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+# config/regulations_kz.yaml — Kazakhstan statute references
+# mapped to indicator ids in signals.yaml.
+#
+# Each entry cites one legal article.  "notes: null" means the citation is
+# approximate or unverified — never invent a specific article number without a
+# primary legislative source.
+#
+# Jurisdiction: Republic of Kazakhstan.
+# Primary source: https://adilet.zan.kz (official KZ legal portal).
+
+statutes:
+
+  - id: art_170_part2_kz
+    short: "УК РК ст. 217"
+    title: "Организация и участие в финансовой пирамиде"
+    article: >
+      Уголовный кодекс Республики Казахстан, Статья 217 —
+      Создание и управление финансовой пирамидой или участие в ней.
+      Гарантированные доходы без лицензии относятся к признакам пирамиды.
+    jurisdiction: KZ
+    notes: >
+      Applies to entities that solicit funds with guaranteed fixed returns
+      without a licence from АРРФР (former АФН).  The article number and
+      short title are approximate — verify against the current text at
+      adilet.zan.kz before citing in a legal filing.
+
+  - id: art_217_kz
+    short: "УК РК ст. 217 ч. 2"
+    title: "Незаконное привлечение денег граждан через реферальные схемы"
+    article: >
+      Уголовный кодекс Республики Казахстан, Статья 217, часть 2 —
+      Незаконное привлечение вкладов граждан; включает реферальные схемы
+      как инструмент вовлечения в незаконную деятельность по привлечению вкладов.
+    jurisdiction: KZ
+    notes: >
+      Covers referral-based recruitment into unlicensed deposit-taking
+      schemes.  Reference is approximate.
+
+  - id: art_229_kz
+    short: "ЗРК о рынке ценных бумаг, ст. 4"
+    title: "Незаконная инвестиционная деятельность без лицензии АРРФР"
+    article: >
+      Закон Республики Казахстан «О рынке ценных бумаг» —
+      Статья 4: требования к лицензированию инвестиционной деятельности.
+      Публичная инвестиционная рекомендация без лицензии нарушает этот
+      закон.
+    jurisdiction: KZ
+    notes: >
+      Soliciting investment without a licence from АРРФР (Агентство
+      Республики Казахстан по регулированию и развитию финансового рынка),
+      the successor to АФН.  The article number is approximate — verify
+      against the current text of the law.
+
+  - id: art_7_gambling_kz
+    short: "ЗРК об азартных играх, ст. 7"
+    title: "Незаконная организация и реклама азартных игр"
+    article: >
+      Закон Республики Казахстан «Об азартных играх и лотерейной
+      деятельности», Статья 7: запрет рекламы азартных игр без разрешения
+      уполномоченного органа.
+    jurisdiction: KZ
+    notes: >
+      Online gambling promotion without a licensed operator certificate.
+      Reference is approximate — verify against current regulatory text.

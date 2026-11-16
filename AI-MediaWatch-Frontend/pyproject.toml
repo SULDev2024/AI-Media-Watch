@@ -1,0 +1,102 @@
+[project]
+name = "aimw"
+version = "0.1.0"
+description = "AI Media Watch v4 — Evidence-First Financial Crime Intelligence Platform"
+readme = "README.md"
+requires-python = "==3.11.*"
+dependencies = [
+    # Upper bounds guard against breaking majors; the lockfile is the source of
+    # truth for exact versions. See ADR-0001 for the dependency policy.
+    "fastapi>=0.110,<1",
+    "uvicorn[standard]>=0.27,<1",
+    "pydantic>=2,<3",
+    "pydantic-settings>=2,<3",
+    "structlog>=24,<27",
+    "sqlalchemy>=2,<3",
+    "alembic>=1.13,<2",
+    "aiosqlite>=0.19,<1",
+    "celery>=5.3,<6",
+    "redis>=5,<9",
+    "httpx>=0.27,<1",
+    "python-dotenv>=1,<2",
+    "regex>=2024.0.0",
+    "rapidfuzz>=3,<4",
+    "pyyaml>=6,<7",
+    "networkx>=3,<4",
+    "greenlet>=3,<4",
+    "typer>=0.12,<1",
+    "chromadb>=0.5,<2",
+    "telethon>=1.34,<2",
+    # Include the matching EJS challenge solver required for YouTube downloads.
+    "yt-dlp[default]>=2026.6.9",
+    "langid>=1.1,<2",
+    "faster-whisper==1.0.*",
+    "numpy>=1.26,<3",
+    "imagehash>=4.3,<5",
+    "Pillow>=10,<12",
+    "opencv-python-headless>=4.9,<5",
+    "jinja2>=3.1,<4",
+    "tiktoken>=0.7,<1",
+    "python-multipart>=0.0.32",
+    "PyJWT>=2.8,<3",
+    "passlib[bcrypt]>=1.7,<2",
+]
+
+[project.optional-dependencies]
+# PaddleOCR + paddlepaddle is a ~800 MB install with brittle Windows wheel
+# resolution (paddlepaddle requires Visual C++ runtime libs that aren't
+# always present). Keeping it optional means CI and the fast test suite
+# don't need it; the slow OCR integration test self-skips if absent. Install
+# locally with: ``uv sync --extra ocr``.
+ocr = [
+    "paddleocr>=3.0",
+    "paddlepaddle>=3.3.1",
+]
+# spaCy recall net for entity NER (ru_core_news_sm installed separately via
+# ``python -m spacy download ru_core_news_sm``). Keeping as optional prevents
+# the 50+ MB model download in CI and the base install.
+entities = [
+    "spacy>=3.7,<4",
+]
+# Qwen3-VL for targeted in-image text recovery on OCR-confirmed frames.
+# Requires ~8–10 GB VRAM (4B) or ~32 GB RAM (CPU). A 2B fallback is attempted
+# automatically. Install with: ``uv sync --extra vlm``.
+vlm = [
+    "transformers>=4.45,<5",
+    "torch>=2.1",
+    "accelerate>=0.30",
+]
+
+[project.scripts]
+aimw = "aimw.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<10",
+    "pytest-asyncio>=0.23,<2",
+    "ruff>=0.5,<1",
+    "mypy>=1.10,<3",
+    "types-PyYAML>=6,<7",
+    "import-linter>=2,<3",
+    "pre-commit>=3,<5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aimw"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = ["-m", "not network"]
+markers = [
+    "slow: marks tests that are slow (deselect with -m 'not slow')",
+    "network: marks tests that require network access (deselect with -m 'not network')",
+]
+filterwarnings = [
+    # The starlette TestClient nudges toward httpx2; not actionable for us yet.
+    "ignore:Using `httpx` with `starlette.testclient`:Warning",
+]

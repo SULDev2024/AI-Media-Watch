@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Evidence Report — {{ pkg.report_id }}</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 960px; margin: 2em auto; padding: 0 1em; line-height: 1.5; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 0.4em 0.6em; text-align: left; vertical-align: top; }
+  th { background: #f0f0f0; }
+  code { background: #f5f5f5; padding: 0 0.2em; }
+  h1, h2 { border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  .level { font-size: 1.4em; font-weight: bold; }
+  .level.CRITICAL { color: #c00; }
+  .level.HIGH     { color: #d80; }
+  .level.MEDIUM   { color: #b80; }
+  .level.LOW      { color: #060; }
+  .level.CLEAN    { color: #888; }
+  footer { color: #888; font-size: 0.9em; margin-top: 2em; }
+</style>
+</head>
+<body>
+<h1>Evidence Report</h1>
+
+<p>
+  <strong>Report ID:</strong> <code>{{ pkg.report_id }}</code><br />
+  <strong>Video ID:</strong> <code>{{ pkg.video_id }}</code><br />
+  <strong>Platform:</strong> {{ pkg.platform }}<br />
+  <strong>URL:</strong> <a href="{{ pkg.url }}">{{ pkg.url }}</a><br />
+  <strong>Collected:</strong> {{ pkg.collected_at.isoformat() }}<br />
+  <strong>Processed:</strong> {{ pkg.processed_at.isoformat() }}
+</p>
+
+<h2>Verdict</h2>
+<p>
+  Risk level: <span class="level {{ result.level }}">{{ result.level }}</span><br />
+  Confidence: {% if result.confidence %}{{ "%.2f"|format(result.confidence.confidence) }}{% else %}—{% endif %}<br />
+  Action: <code>{{ result.action }}</code><br />
+  Confidence softened: {{ result.confidence_softened }}
+  {% if result.status_note %}<br />Status note: <code>{{ result.status_note }}</code>{% endif %}
+</p>
+
+<h2>Evidence</h2>
+{% if pkg.evidence %}
+<table>
+  <tr><th>#</th><th>Source</th><th>Timestamp</th><th>Indicator</th><th>Polarity</th><th>Strength</th><th>Raw value</th><th>Regulation</th></tr>
+  {% for p in pkg.evidence %}
+  <tr>
+    <td>{{ loop.index }}</td>
+    <td>{{ p.source }}</td>
+    <td>{% if p.timestamp is not none %}{{ "%.1f"|format(p.timestamp) }}s{% else %}—{% endif %}</td>
+    <td><code>{{ p.indicator_type }}</code></td>
+    <td>{{ p.polarity }}</td>
+    <td>{{ p.strength }}</td>
+    <td><code>{{ p.raw_value|truncate(40, true, "…") }}</code></td>
+    <td>{{ p.regulation_ref or "—" }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}<p><em>No evidence pieces.</em></p>{% endif %}
+
+<h2>Entities</h2>
+<table>
+  <tr><th>Type</th><th>Values</th></tr>
+  <tr><td>Telegram handles</td><td>{{ pkg.entities.telegram_handles | join(", ") or "—" }}</td></tr>
+  <tr><td>Telegram links</td><td>{{ pkg.entities.telegram_links | join(", ") or "—" }}</td></tr>
+  <tr><td>Crypto wallets</td><td>{{ pkg.entities.crypto_wallets | join(", ") or "—" }}</td></tr>
+  <tr><td>Phones</td><td>{{ pkg.entities.phone_numbers | join(", ") or "—" }}</td></tr>
+  <tr><td>Referral codes</td><td>{{ pkg.entities.referral_codes | join(", ") or "—" }}</td></tr>
+  <tr><td>Websites</td><td>{{ pkg.entities.websites | join(", ") or "—" }}</td></tr>
+  <tr><td>Profit claims</td><td>{{ pkg.entities.profit_claims | join(", ") or "—" }}</td></tr>
+</table>
+
+<h2>Score Breakdown</h2>
+<ul>
+  <li><code>raw_incriminating</code> = {{ "%.4f"|format(result.adjusted.raw_incriminating) }}</li>
+  <li><code>raw_mitigating</code> = {{ "%.4f"|format(result.adjusted.raw_mitigating) }}</li>
+  <li><code>incrim_after_diminishing</code> = {{ "%.4f"|format(result.adjusted.incrim_after_diminishing) }}</li>
+  <li><code>mitig_after_diminishing</code> = {{ "%.4f"|format(result.adjusted.mitig_after_diminishing) }}</li>
+  <li><code>applied_entity_gate</code> = {{ result.adjusted.applied_entity_gate }}</li>
+  <li><code>mitigation_floor_applied</code> = {{ result.adjusted.mitigation_floor_applied }}</li>
+  <li><code>mitig_after_floor</code> = {{ "%.4f"|format(result.adjusted.mitig_after_floor) }}</li>
+  <li><code>raw_score</code> = {{ "%.4f"|format(result.adjusted.raw_score) }}</li>
+  <li><code>clamped_score</code> = {{ "%.4f"|format(result.adjusted.clamped_score) }}</li>
+  <li><code>single_source_ceiling_applied</code> = {{ result.adjusted.single_source_ceiling_applied }}</li>
+  <li><strong><code>final_score</code> = {{ "%.4f"|format(result.adjusted.final_score) }}</strong></li>
+  <li><code>level</code> = {{ result.adjusted.level }}</li>
+</ul>
+
+<h2>Prosecutor Brief</h2>
+{% if result.prosecutor and result.prosecutor.arguments %}
+<ul>
+  {% for arg in result.prosecutor.arguments %}
+  <li><strong>{{ arg.strength | upper }}</strong> — {{ arg.statement }}
+    <br /><small>cites: {{ arg.evidence_piece_ids | join(", ") }}</small></li>
+  {% endfor %}
+</ul>
+{% else %}<p><em>No prosecutor arguments produced.</em></p>{% endif %}
+
+<h2>Defense Brief</h2>
+{% if result.defense and result.defense.arguments %}
+<ul>
+  {% for arg in result.defense.arguments %}
+  <li><strong>{{ arg.strength | upper }}</strong> — {{ arg.statement }}
+    <br /><small>cites: {{ arg.evidence_piece_ids | join(", ") }}</small></li>
+  {% endfor %}
+</ul>
+{% else %}<p><em>No defense arguments produced.</em></p>{% endif %}
+
+<h2>Valid Discounts</h2>
+{% if result.valid_discounts %}
+<ul>
+  {% for d in result.valid_discounts %}
+  <li><code>{{ d.kind }}</code> on <code>{{ d.piece_indicator_type or "—" }}</code> — {{ d.reason }}</li>
+  {% endfor %}
+</ul>
+{% else %}<p><em>None.</em></p>{% endif %}
+
+<h2>Network Connections</h2>
+{% if pkg.network_connections %}
+<ul>
+  {% for conn in pkg.network_connections %}
+  <li><code>{{ conn.kind }}</code> / <code>{{ conn.shared_entity_kind }}</code> = <code>{{ conn.shared_entity_value }}</code>
+    <br />campaign_strength=<strong>{{ conn.campaign_strength }}</strong>; co-occurring videos: {{ conn.co_occurring_report_ids | join(", ") }}
+    <br /><small>detected at {{ conn.detected_at.isoformat() }}</small></li>
+  {% endfor %}
+</ul>
+{% else %}<p><em>No network connections recorded.</em></p>{% endif %}
+
+<h2>Confidence Breakdown</h2>
+{% if result.confidence %}
+<ul>
+  <li><code>agreement</code>  = {{ "%.4f"|format(result.confidence.agreement) }}</li>
+  <li><code>redundancy</code> = {{ "%.4f"|format(result.confidence.redundancy) }}</li>
+  <li><code>certainty</code>  = {{ "%.4f"|format(result.confidence.certainty) }}</li>
+  <li><code>gap</code>        = {{ "%.4f"|format(result.confidence.gap) }}</li>
+  <li><strong><code>confidence</code> = {{ "%.2f"|format(result.confidence.confidence) }}</strong></li>
+</ul>
+{% else %}<p><em>Briefs were not produced; confidence not computed.</em></p>{% endif %}
+
+<footer>schema_version: {{ schema_version }}</footer>
+</body>
+</html>
